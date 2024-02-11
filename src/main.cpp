@@ -25,7 +25,7 @@ const uint8_t kNumSegmentsConfig = 1;
 //ShutdownInput shutdown_input{A14, 1.0f / 7.0f, 15.0f, 10.0f};
 
 NXFT15XH103FA2B050 thermistor{};
-BQ79656 bq = {Serial8, 35, thermistor, 20 * kNumSegmentsConfig, 16 * kNumSegmentsConfig, 2 * kNumSegmentsConfig};
+BQ79656 bq{Serial8, 35, thermistor, 20 * kNumSegmentsConfig, 16 * kNumSegmentsConfig, 2 * kNumSegmentsConfig};
 
 void setup() {
   // put your setup code here, to run once:
