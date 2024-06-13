@@ -14,7 +14,7 @@
 #include "teensy_pin_defs.h"
 
 template <typename T>
-T clamp(const T& n, const T& lower, const T& upper)
+T clamp(const T &n, const T &lower, const T &upper)
 {
     return std::max(lower, std::min(n, upper));
 }
@@ -77,12 +77,12 @@ public:
     BMS(BQ79656 bq /*  = BQ79656{Serial8, 35} */,
         int num_cells_series,
         int num_thermistors,
-        ICharger& charger,
-        VirtualTimerGroup& timer_group,
-        ICAN& hp_can,
-        ICAN& lp_can,
-        ICAN& vb_can,
-        ShutdownInput& shutdown_input)
+        ICharger &charger,
+        VirtualTimerGroup &timer_group,
+        ICAN &hp_can,
+        ICAN &lp_can,
+        ICAN &vb_can,
+        ShutdownInput &shutdown_input)
         : bq_{bq},
           kNumCellsSeries{num_cells_series},
           kNumThermistors{num_thermistors},
@@ -109,7 +109,7 @@ public:
             //  attachInterrupt(digitalPinToInterrupt(kill_pins[i]), FaultInterrupt, FALLING);
         } */
 
-        pinMode(charger_sense, INPUT_PULLDOWN);     // TODO: see if used
+        pinMode(charger_sense, INPUT_PULLDOWN); // TODO: see if used
 
         pinMode(contactorprecharge_ctrl, OUTPUT);
         pinMode(contactorp_ctrl, OUTPUT);
@@ -129,20 +129,22 @@ public:
         WDT_timings_t config;
         config.trigger = 1; /* in seconds, 0->128 */
         config.timeout = 2; /* in seconds, 0->128 */
-        config.callback = [this]() { this->ChangeState(BMSState::kFault); };
+        config.callback = [this]()
+        { this->ChangeState(BMSState::kFault); };
         watchdog_timer_.begin(config);
 
         timer_group_.AddTimer(
-            15000, [this]() { this->open_wire_fault_ = static_cast<BMSFault>(this->bq_.RunOpenWireCheck()); });
+            15000, [this]()
+            { this->open_wire_fault_ = static_cast<BMSFault>(this->bq_.RunOpenWireCheck()); });
     }
 
     void Tick();
 
     void CalculateSOE();
 
-    const std::vector<float>& GetVoltages() override { return voltages_; }
-    const std::vector<float>& GetTemperatures() override { return temperatures_; }
-    const std::vector<float>& GetCurrent() override { return current_; }
+    const std::vector<float> &GetVoltages() override { return voltages_; }
+    const std::vector<float> &GetTemperatures() override { return temperatures_; }
+    const std::vector<float> &GetCurrent() override { return current_; }
 
     BMSState GetState() override { return current_state_; }
     float GetMaxCellTemperature() override { return max_cell_temperature_; }
@@ -185,14 +187,14 @@ private:
     const int kNumCellsSeries;
     const int kNumThermistors;
 
-    ICharger& charger_;
-    VirtualTimerGroup& timer_group_;
+    ICharger &charger_;
+    VirtualTimerGroup &timer_group_;
 
-    ICAN& hp_can_;
-    ICAN& lp_can_;
-    ICAN& vb_can_;
+    ICAN &hp_can_;
+    ICAN &lp_can_;
+    ICAN &vb_can_;
 
-    ShutdownInput& shutdown_input_;
+    ShutdownInput &shutdown_input_;
 
     // Consts for SoE calculation + Fault Detection
     const int kNumCellsParallel{4};
@@ -201,11 +203,11 @@ private:
     const float kMaxPowerOutput{80000.0f};
     const float kCellUndervoltage{2.5f};
     const float kCellOvervoltage{4.2f};
-    const float kInternalResistance{0.015f};    // 0.015 for P45Bs 
+    const float kInternalResistance{0.015f}; // 0.015 for P45Bs
     const float kOvercurrent{180.0f};
     const float kOvertemp{60.0f};
     const float kUndertemp{-40.0f};
-    const uint32_t kPrechargeTime{2000};    // potentially change
+    const uint32_t kPrechargeTime{2000}; // potentially change
 
     MakeUnsignedCANSignal(Command, 0, 8, 1, 0) command_signal_{};
     MakeUnsignedCANSignal(bool, 8, 1, 1, 0) high_current_charging_{};
@@ -279,9 +281,9 @@ private:
         }
     } */
 
-    void GetMaxMinAvgTot(double* arr,
+    void GetMaxMinAvgTot(double *arr,
                          int arrSize,
-                         double* res)  // may be unused/deleted or replaced with a different function/implementation
+                         double *res) // may be unused/deleted or replaced with a different function/implementation
     {
         double currMax = arr[0];
         double currMin = arr[0];
