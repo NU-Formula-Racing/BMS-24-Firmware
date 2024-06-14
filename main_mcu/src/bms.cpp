@@ -18,43 +18,40 @@ void BMS::CheckFaults()
     external_kill_fault_ = static_cast<BMSFault>(shutdown_input_.GetStatus() == ShutdownInput::InputState::kShutdown);
 
     fault_ =
-        static_cast<BMSFault>(static_cast<bool>(overvoltage_fault_) || static_cast<bool>(undervoltage_fault_)
-                              || static_cast<bool>(overcurrent_fault_) || static_cast<bool>(overtemperature_fault_)
-                              || static_cast<bool>(undertemperature_fault_) || static_cast<bool>(open_wire_fault_)
-                              || (static_cast<bool>(external_kill_fault_) && current_state_ != BMSState::kShutdown));
+        static_cast<BMSFault>(static_cast<bool>(overvoltage_fault_) || static_cast<bool>(undervoltage_fault_) || static_cast<bool>(overcurrent_fault_) || static_cast<bool>(overtemperature_fault_) || static_cast<bool>(undertemperature_fault_) || static_cast<bool>(open_wire_fault_) || (static_cast<bool>(external_kill_fault_) && current_state_ != BMSState::kShutdown));
 }
 
 void BMS::Tick()
 {
     Serial.println("Probe BQ");
-    watchdog_timer_.feed();  // so we don't reboot
+    watchdog_timer_.feed(); // so we don't reboot
     // check fault status
     if (fault_ != BMSFault::kNotFaulted && current_state_ != BMSState::kFault)
     {
         /* #if serialdebug */
-                Serial.println("Faults:");
-                if (static_cast<bool>(overvoltage_fault_))
-                {
-                    Serial.println("  Overvoltage");
-                }
-                else if (static_cast<bool>(undervoltage_fault_))
-                {
-                    Serial.println("  Undervoltage");
-                }
-                /*if (overtemperature_fault_)
-                {
-                    Serial.println("  Overtemperature");
-                }
-                else if (undertemperature_fault_)
-                {
-                    Serial.println("  Undertemperature");
-                }
-                if (overcurrent_fault_)
-                {
-                    Serial.println("  Overcurrent");
-                }
-                Serial.println("");
-             #endif */
+        Serial.println("Faults:");
+        if (static_cast<bool>(overvoltage_fault_))
+        {
+            Serial.println("  Overvoltage");
+        }
+        else if (static_cast<bool>(undervoltage_fault_))
+        {
+            Serial.println("  Undervoltage");
+        }
+        /*if (overtemperature_fault_)
+        {
+            Serial.println("  Overtemperature");
+        }
+        else if (undertemperature_fault_)
+        {
+            Serial.println("  Undertemperature");
+        }
+        if (overcurrent_fault_)
+        {
+            Serial.println("  Overcurrent");
+        }
+        Serial.println("");
+     #endif */
 
         ChangeState(BMSState::kFault);
     }
@@ -89,7 +86,7 @@ void BMS::CalculateSOE()
 
     max_allowed_discharge_current_ = std::min({uncapped_discharge_current, power_capped_current, kDischargeCurrent});
     // Serial.println(max_allowed_discharge_current_);
-    max_allowed_regen_current_ = std::min(uncapped_regen_current, kRegenCurrent);   // TODO: See if regen counts towards power current
+    max_allowed_regen_current_ = std::min(uncapped_regen_current, kRegenCurrent); // TODO: See if regen counts towards power current
 }
 
 void BMS::ProcessCooling()
@@ -111,8 +108,7 @@ void BMS::UpdateValues()
     min_cell_voltage_ = *std::min_element(voltages_.begin(), voltages_.end());
 
     // debug cell_v print
-    //for (auto voltage : voltages_){ Serial.println(voltage); } 
- 
+    // for (auto voltage : voltages_){ Serial.println(voltage); }
 
     CalculateSOE();
     if (!coulomb_count_.Initialized())
@@ -140,105 +136,106 @@ void BMS::ProcessState()
     CheckFaults();
 
     // prints
-    //Serial.print("fault_: ");
-    //Serial.println(static_cast<int>(fault_));
-    //Serial.print("current_state_: ");
-    //Serial.println(static_cast<int>(current_state_));
+    // Serial.print("fault_: ");
+    // Serial.println(static_cast<int>(fault_));
+    // Serial.print("current_state_: ");
+    // Serial.println(static_cast<int>(current_state_));
 
     switch (current_state_)
     {
-        case BMSState::kShutdown:
-            // check for command to go to active
-            if (command_signal_ == Command::kPrechargeAndCloseContactors)
+    case BMSState::kShutdown:
+        // check for command to go to active
+        if (command_signal_ == Command::kPrechargeAndCloseContactors)
+        {
+            ChangeState(BMSState::kPrecharge);
+        }
+        else if (charger_.IsConnected() && !(command_signal_ == Command::kShutdown))
+        {
+            Serial.println("Detected charger");
+            ChangeState(BMSState::kPrecharge);
+        }
+        break;
+    case BMSState::kPrecharge:
+        // do a time-based precharge
+        if (command_signal_ == Command::kShutdown)
+        {
+            ChangeState(BMSState::kShutdown);
+        }
+        if (millis() >= state_entry_time_ + kPrechargeTime)
+        {
+            if (charger_.IsConnected())
             {
-                ChangeState(BMSState::kPrecharge);
-            }
-            else if (charger_.IsConnected() && !(command_signal_ == Command::kShutdown))
-            {
-                Serial.println("Detected charger");
-                ChangeState(BMSState::kPrecharge);
-            }
-            break;
-        case BMSState::kPrecharge:
-            // do a time-based precharge
-            if (command_signal_ == Command::kShutdown)
-            {
-                ChangeState(BMSState::kShutdown);
-            }
-            if (millis() >= state_entry_time_ + kPrechargeTime)
-            {
-                if (charger_.IsConnected())
-                {
-                    ChangeState(BMSState::kCharging);
-                }
-                else 
-                if (command_signal_ == Command::kPrechargeAndCloseContactors)
-                {
-                    ChangeState(BMSState::kActive);
-                }
-                else
-                {
-                    ChangeState(BMSState::kShutdown);
-                }
-            }
-
-            break;
-        case BMSState::kActive:
-            if (command_signal_ == Command::kShutdown)
-            {
-                ChangeState(BMSState::kShutdown);
-            }
-            else if (charger_.IsConnected())
-            {
+                Serial.println("Precharge complete. Transitioning from precharge to charging");
                 ChangeState(BMSState::kCharging);
             }
-            break;
-        case BMSState::kCharging:
-            static constexpr float kMaxChargeVoltage{4.19f};
-
-            charger_.Tick(millis());
-
-            if (!charger_.IsConnected() || command_signal_ == Command::kShutdown)
+            else if (command_signal_ == Command::kPrechargeAndCloseContactors)
             {
-                charger_.Disable();
-                ChangeState(BMSState::kShutdown);
-                break;
-            }
-            // cell balancing if charging
-            bq_.ProcessBalancing(voltages_, kMaxChargeVoltage);
-            // pause charging if danger of overvoltage
-            if (max_cell_voltage_ >= kMaxChargeVoltage)
-            {
-                charger_.SetVoltageCurrent(kMaxChargeVoltage * kNumCellsSeries, 0);
-                // pause charging, set current to 0
+                ChangeState(BMSState::kActive);
             }
             else
             {
-                /*if (high_current_charging_)
-                {
-                    charger_.SetMaxCurrent(14);
-                    charger_.SetMaxPower(240 * 20);
-                }
-                else
-                {
-                    charger_.SetMaxCurrent(0.1);
-                    charger_.SetMaxPower(120 * 15);
-                }*/
-                charger_.SetVoltageCurrent(kMaxChargeVoltage * kNumCellsSeries, max_allowed_regen_current_);
-            }
-            // todo
-            
-            break;
-        case BMSState::kFault:
-            // check for clear faults command
-            if (command_signal_ == Command::kClearFaults)
-            {
-                external_kill_fault_ = BMSFault::kNotFaulted;
                 ChangeState(BMSState::kShutdown);
             }
-            break;
-    }
+        }
 
+        break;
+    case BMSState::kActive:
+        if (command_signal_ == Command::kShutdown)
+        {
+            ChangeState(BMSState::kShutdown);
+        }
+        else if (charger_.IsConnected())
+        {
+            Serial.println("Charger connected! Transitioning from active to charging");
+            ChangeState(BMSState::kCharging);
+        }
+        break;
+    case BMSState::kCharging:
+        static constexpr float kMaxChargeVoltage{4.19f};
+
+        charger_.Tick(millis());
+
+        if (!charger_.IsConnected() || command_signal_ == Command::kShutdown)
+        {
+            charger_.Disable();
+            ChangeState(BMSState::kShutdown);
+            break;
+        }
+        // cell balancing if charging
+        bq_.ProcessBalancing(voltages_, kMaxChargeVoltage);
+        // pause charging if danger of overvoltage
+        if (max_cell_voltage_ >= kMaxChargeVoltage)
+        {
+            Serial.println("Max cell voltage tripped. Pausing charging by setting current to 0.");
+            charger_.SetVoltageCurrent(kMaxChargeVoltage * kNumCellsSeries, 0);
+            // pause charging, set current to 0
+        }
+        else
+        {
+            /*if (high_current_charging_)
+            {
+                charger_.SetMaxCurrent(14);
+                charger_.SetMaxPower(240 * 20);
+            }
+            else
+            {
+                charger_.SetMaxCurrent(0.1);
+                charger_.SetMaxPower(120 * 15);
+            }*/
+            charger_.SetVoltageCurrent(kMaxChargeVoltage * kNumCellsSeries, max_allowed_regen_current_);
+        }
+        // todo
+
+        break;
+    case BMSState::kFault:
+        // check for clear faults command
+        if (command_signal_ == Command::kClearFaults)
+        {
+            external_kill_fault_ = BMSFault::kNotFaulted;
+            ChangeState(BMSState::kShutdown);
+        }
+        break;
+    }
 }
 
 void BMS::ChangeState(BMSState new_state)
@@ -253,38 +250,38 @@ void BMS::ChangeState(BMSState new_state)
     state_entry_time_ = millis();
     switch (new_state)
     {
-        case BMSState::kShutdown:
-            ShutdownCar();
-            current_state_ = BMSState::kShutdown;
-            break;
-        case BMSState::kPrecharge:
-            digitalWrite(contactorn_ctrl, HIGH);
-            delay(1);
-            digitalWrite(contactorprecharge_ctrl, HIGH);  // precharge, but don't turn on car yet
-            current_state_ = BMSState::kPrecharge;
-            break;
-        case BMSState::kActive:
-            digitalWrite(contactorp_ctrl, HIGH);         // turn on car
-            digitalWrite(contactorprecharge_ctrl, LOW);  // disable precharge when car is running
+    case BMSState::kShutdown:
+        ShutdownCar();
+        current_state_ = BMSState::kShutdown;
+        break;
+    case BMSState::kPrecharge:
+        digitalWrite(contactorn_ctrl, HIGH);
+        delay(1);
+        digitalWrite(contactorprecharge_ctrl, HIGH); // precharge, but don't turn on car yet
+        current_state_ = BMSState::kPrecharge;
+        break;
+    case BMSState::kActive:
+        digitalWrite(contactorp_ctrl, HIGH);        // turn on car
+        digitalWrite(contactorprecharge_ctrl, LOW); // disable precharge when car is running
+        coulomb_count_.Initialize(cell.VoltageToSOC(min_cell_voltage_), state_entry_time_);
+        current_state_ = BMSState::kActive;
+        break;
+    case BMSState::kCharging:
+        // enable charger?
+        {
+
+            digitalWrite(contactorp_ctrl, HIGH);        // turn on car
+            digitalWrite(contactorprecharge_ctrl, LOW); // disable precharge when car is running
             coulomb_count_.Initialize(cell.VoltageToSOC(min_cell_voltage_), state_entry_time_);
-            current_state_ = BMSState::kActive;
+            charger_.Enable();
+            current_state_ = BMSState::kCharging;
+
             break;
-        case BMSState::kCharging:
-            // enable charger?
-            {
-                
-                digitalWrite(contactorp_ctrl, HIGH);         // turn on car
-                digitalWrite(contactorprecharge_ctrl, LOW);  // disable precharge when car is running
-                coulomb_count_.Initialize(cell.VoltageToSOC(min_cell_voltage_), state_entry_time_);
-                charger_.Enable();
-                current_state_ = BMSState::kCharging;
-                
-                break;
-            }
-        case BMSState::kFault:
-            // open contactors
-            ShutdownCar();
-            current_state_ = BMSState::kFault;
-            break;
+        }
+    case BMSState::kFault:
+        // open contactors
+        ShutdownCar();
+        current_state_ = BMSState::kFault;
+        break;
     }
 }
