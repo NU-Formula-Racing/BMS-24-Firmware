@@ -10,7 +10,7 @@
 #include "thermistor.h"
 #include "virtualTimer.h"
 
-#define serialdebug 0
+#define serialdebug true
 
 TeensyCAN<1> hp_can{};
 TeensyCAN<2> lp_can{};
@@ -37,20 +37,26 @@ BMS bms{BQ79656{Serial8, 35, thermistor, 18 * kNumSegmentsConfig, 16 * kNumSegme
 
 void setup()
 {
-#if serialdebug
-    delay(2000);
     Serial.begin(9600);
-    //Serial.println("Starting...");
+    delay(2000);
 
+    if (CrashReport)
+    {
+        Serial.print(CrashReport);
+    }
+
+#if serialdebug
+    Serial.println("Starting...");
 #endif
     // put your setup code here, to run once:
     bms.Initialize();
-    //Serial.println("BMS Inited");
+    // Serial.println("BMS Inited");
     hp_can.Initialize(ICAN::BaudRate::kBaud1M);
     lp_can.Initialize(ICAN::BaudRate::kBaud1M);
     vb_can.Initialize(ICAN::BaudRate::kBaud500K);
     charger.Initialize();
-    timer_group.AddTimer(100, []() { bms.Tick(); });
+    timer_group.AddTimer(100, []()
+                         { bms.Tick(); });
     // delay(1000);
 }
 
