@@ -10,7 +10,7 @@
 #include "thermistor.h"
 #include "virtualTimer.h"
 
-#define serialdebug 1
+#define serialdebug 0
 
 TeensyCAN<1> hp_can{};
 TeensyCAN<2> lp_can{};
