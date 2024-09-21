@@ -9,6 +9,7 @@
 #define contactorprecharge_ctrl 20
 #define contactorp_ctrl 21
 #define contactorn_ctrl 10
+#define shutdown_pin 11
 
 #define charger_sense 14
 // const int kill_pins[]{14, 15, 18, 19, 24, 25, 40, 32, 9, 6, 2, 33};

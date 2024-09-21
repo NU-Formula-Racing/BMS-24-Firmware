@@ -9,12 +9,21 @@
 #include "teensy_can.h"
 #include "thermistor.h"
 #include "virtualTimer.h"
+#include "teensy_pin_defs.h"
 
 #define serialdebug true
 
+// #define TEENSY40_HACK
+
 TeensyCAN<1> hp_can{};
-TeensyCAN<2> lp_can{};
-TeensyCAN<3> vb_can{};
+TeensyCAN<2> vb_can{};
+
+#ifdef TEENSY40_HACK
+#include "dummy_can.hpp"
+DummyCAN lp_can{};
+#else
+TeensyCAN<3> lp_can{};
+#endif // TEENSY40_HACK
 
 ElconCharger charger{vb_can, 120 * 15, 14};
 
@@ -60,4 +69,7 @@ void setup()
     // delay(1000);
 }
 
-void loop() { timer_group.Tick(millis()); }
+void loop() { 
+    // Serial.println("Looping...");
+    timer_group.Tick(millis()); 
+}
