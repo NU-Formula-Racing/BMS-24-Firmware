@@ -97,6 +97,7 @@ void BMSTelemetry::UpdateFaultSignals()
 
 void BMSTelemetry::UpdateStatusSignals()
 {
+    Serial.printf("State: %d\n", static_cast<int>(bms_.GetState()));
     state_signal_ = bms_.GetState();
     max_cell_temperature_signal_ = bms_.GetMaxCellTemperature();
     min_cell_temperature_signal_ = bms_.GetMinCellTemperature();
@@ -107,6 +108,7 @@ void BMSTelemetry::UpdateStatusSignals()
 
 void BMSTelemetry::TickHPCAN()
 {
+    Serial.println("Ticking HP CAN");
     UpdateSOESignals();
     UpdateStatusSignals();
 

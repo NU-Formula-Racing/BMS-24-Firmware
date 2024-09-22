@@ -120,7 +120,7 @@ public:
         bq_.Initialize();
 
         // // initialize BMS telemetry
-        // telemetry.InitializeCAN();
+        telemetry.InitializeCAN();
         hp_can_.RegisterRXMessage(command_message_hp_);
         vb_can_.RegisterRXMessage(command_message_vb_);
 
@@ -215,6 +215,15 @@ private:
     MakeUnsignedCANSignal(bool, 8, 1, 1, 0) high_current_charging_ {};
     CANRXMessage<1> command_message_hp_{hp_can_, 0x242, command_signal_};
     CANRXMessage<2> command_message_vb_{vb_can_, 0x242, command_signal_, high_current_charging_};
+
+    // bms state, max cell temp, min cell temp, max cell voltage, min cell voltage, SOC
+    // MakeUnsignedCANSignal(uint8_t, 0, 8, 1, 0) state_signal_{};
+    // MakeUnsignedCANSignal(float, 8, 8, 1, -40) max_cell_temperature_signal_{};
+    // MakeUnsignedCANSignal(float, 16, 8, 1, -40) min_cell_temperature_signal_{};
+    // MakeUnsignedCANSignal(float, 24, 8, 0.012, 2) max_cell_voltage_signal_{};
+    // MakeUnsignedCANSignal(float, 32, 8, 0.012, 2) min_cell_voltage_signal_{};
+    // MakeUnsignedCANSignal(float, 40, 8, 0.5, 0) soc_signal_{};
+    // CANTXMessage<6> hp_status_message_{hp_can_, 0x241, 6, 100, timer_group_, state_signal_, max_cell_temperature_signal_, min_cell_temperature_signal_, max_cell_voltage_signal_, min_cell_voltage_signal_, soc_signal_};
 
     std::vector<float> voltages_;
     std::vector<float> temperatures_;

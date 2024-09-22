@@ -109,7 +109,7 @@ private:
     MakeUnsignedCANSignal(float, 32, 8, 0.012, 2) min_cell_voltage_signal_;
     MakeUnsignedCANSignal(float, 40, 8, 0.5, 0) soc_signal_;
     CANTXMessage<6> hp_status_message_{hp_can_bus_,
-                                       577,
+                                       0x241,
                                        6,
                                        kStatusMessageTransmitPeriod,
                                        timer_group_,
@@ -120,7 +120,7 @@ private:
                                        min_cell_voltage_signal_,
                                        soc_signal_};
     CANTXMessage<6> vb_status_message_{vb_can_bus_,
-                                       577,
+                                       0x241,
                                        6,
                                        kStatusMessageTransmitPeriod,
                                        timer_group_,

@@ -64,8 +64,15 @@ void BMS::Tick()
     Serial.println("About to process state");
     ProcessState();
 
-    // log to SD, send to ESP, send to CAN
-    // todo
+    // // update the signals in the hp_status_message_
+    // Serial.println("Updating signals");
+    // Serial.printf("State: %d\n", static_cast<int>(current_state_));
+    // this->state_signal_ = (uint8_t)current_state_;
+    // this->max_cell_temperature_signal_ = max_cell_temperature_;
+    // this->min_cell_temperature_signal_ = min_cell_temperature_;
+    // this->max_cell_voltage_signal_ = max_cell_voltage_;
+    // this->min_cell_voltage_signal_ = min_cell_voltage_;
+    // this->soc_signal_ = GetSOC();
 }
 
 // Find maximum discharge and regen current
@@ -112,7 +119,7 @@ void BMS::UpdateValues()
     Serial.println("Processed Cooling");
 
     bq_.GetCurrent(current_);
-    Serial.println("Got Current");  
+    Serial.println("Got Current");
 
     bq_.GetVoltages(voltages_);
     Serial.println("Got Voltages");

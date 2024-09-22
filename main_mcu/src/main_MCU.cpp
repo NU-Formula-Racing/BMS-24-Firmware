@@ -27,7 +27,7 @@ TeensyCAN<3> lp_can{};
 
 ElconCharger charger{vb_can, 120 * 15, 14};
 
-VirtualTimerGroup timer_group{};
+VirtualTimerGroup    timer_group{};
 
 const uint8_t kNumSegmentsConfig = 8;
 

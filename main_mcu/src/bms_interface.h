@@ -17,7 +17,7 @@ public:
         kPrecharge = 1,
         kActive = 2,
         kCharging = 3,
-        kFault = 4
+        kFault = 4 // any faults
     };
 
     virtual const std::vector<float> &GetVoltages() = 0;
