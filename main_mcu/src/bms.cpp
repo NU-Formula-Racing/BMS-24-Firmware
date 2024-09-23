@@ -10,12 +10,14 @@ int BMS::fault_pin_{-1};
 
 void BMS::CheckFaults()
 {
-    overvoltage_fault_ = static_cast<BMSFault>(max_cell_voltage_ >= kCellOvervoltage);
-    undervoltage_fault_ = static_cast<BMSFault>(min_cell_voltage_ <= kCellUndervoltage);
-    overcurrent_fault_ = static_cast<BMSFault>(current_[0] >= kOvercurrent);
-    overtemperature_fault_ = static_cast<BMSFault>(max_cell_temperature_ >= kOvertemp);
-    undertemperature_fault_ = static_cast<BMSFault>(min_cell_temperature_ <= kUndertemp);
-    external_kill_fault_ = static_cast<BMSFault>(shutdown_input_.GetStatus() == ShutdownInput::InputState::kShutdown);
+    // check for all the faults
+    // latch the faults tho
+    overvoltage_fault_ = static_cast<BMSFault>(max_cell_voltage_ >= kCellOvervoltage || overvoltage_fault_ == BMSFault::kFaulted);
+    undervoltage_fault_ = static_cast<BMSFault>(min_cell_voltage_ <= kCellUndervoltage || undervoltage_fault_ == BMSFault::kFaulted);  
+    overcurrent_fault_ = static_cast<BMSFault>(current_[0] >= kOvercurrent || overcurrent_fault_ == BMSFault::kFaulted);
+    overtemperature_fault_ = static_cast<BMSFault>(max_cell_temperature_ >= kOvertemp || overtemperature_fault_ == BMSFault::kFaulted);
+    undertemperature_fault_ = static_cast<BMSFault>(min_cell_temperature_ <= kUndertemp || undertemperature_fault_ == BMSFault::kFaulted);
+    external_kill_fault_ = static_cast<BMSFault>(shutdown_input_.GetStatus() == ShutdownInput::InputState::kShutdown || external_kill_fault_ == BMSFault::kFaulted);
 
     fault_ =
         static_cast<BMSFault>(static_cast<bool>(overvoltage_fault_) || static_cast<bool>(undervoltage_fault_) || static_cast<bool>(overcurrent_fault_) || static_cast<bool>(overtemperature_fault_) || static_cast<bool>(undertemperature_fault_) || static_cast<bool>(open_wire_fault_) || (static_cast<bool>(external_kill_fault_) && current_state_ != BMSState::kShutdown));
@@ -105,7 +107,9 @@ void BMS::ProcessCooling()
 {
     // return;
     // check temperatures
+    Serial.println("Processing cooling");
     bq_.GetTemps(temperatures_);
+    Serial.println("Got temperatures");
     max_cell_temperature_ = *std::max_element(temperatures_.begin(), temperatures_.end());
     min_cell_temperature_ = *std::min_element(temperatures_.begin(), temperatures_.end());
     average_cell_temperature_ = std::accumulate(temperatures_.begin(), temperatures_.end(), 0) / temperatures_.size();

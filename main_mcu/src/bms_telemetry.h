@@ -75,6 +75,20 @@ private:
     MakeUnsignedCANSignal(IBMS::BMSFault, 5, 1, 1, 0) overcurrent_signal_;
     MakeUnsignedCANSignal(IBMS::BMSFault, 6, 1, 1, 0) external_kill_signal_;
     MakeUnsignedCANSignal(IBMS::BMSFault, 7, 1, 1, 0) open_wire_signal_;
+    CANTXMessage<8> hp_fault_message_{hp_can_bus_,
+                                      592,
+                                      1,
+                                      kFaultMessageTransmitPeriod,
+                                      timer_group_,
+                                      fault_summary_signal_,
+                                      undervoltage_signal_,
+                                      overvoltage_signal_,
+                                      undertemperature_signal_,
+                                      overtemperature_signal_,
+                                      overcurrent_signal_,
+                                      external_kill_signal_,
+                                      open_wire_signal_};
+
     CANTXMessage<8> vb_fault_message_{vb_can_bus_,
                                       592,
                                       1,
