@@ -108,7 +108,7 @@ void BMSTelemetry::UpdateStatusSignals()
 
 void BMSTelemetry::TickHPCAN()
 {
-    Serial.println("Ticking HP CAN");
+    // Serial.println("Ticking HP CAN");
     UpdateSOESignals();
     UpdateStatusSignals();
 

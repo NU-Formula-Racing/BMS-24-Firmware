@@ -64,12 +64,13 @@ void setup()
     lp_can.Initialize(ICAN::BaudRate::kBaud1M);
     vb_can.Initialize(ICAN::BaudRate::kBaud500K);
     charger.Initialize();
-    timer_group.AddTimer(100, []()
+    timer_group.AddTimer(50, []()
                          { bms.Tick(); });
     // delay(1000);
 }
 
 void loop() { 
-    // Serial.println("Looping...");
+    // Serial.println("Feeding...");
+    // bms.watchdog_timer.feed();
     timer_group.Tick(millis()); 
 }

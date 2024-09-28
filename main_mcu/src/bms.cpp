@@ -21,13 +21,17 @@ void BMS::CheckFaults()
 
     fault_ =
         static_cast<BMSFault>(static_cast<bool>(overvoltage_fault_) || static_cast<bool>(undervoltage_fault_) || static_cast<bool>(overcurrent_fault_) || static_cast<bool>(overtemperature_fault_) || static_cast<bool>(undertemperature_fault_) || static_cast<bool>(open_wire_fault_) || (static_cast<bool>(external_kill_fault_) && current_state_ != BMSState::kShutdown));
+
+    // // very very danagerous, but we are only listening for the external kill switch
+    // external_kill_fault_ = static_cast<BMSFault>(shutdown_input_.GetStatus() == ShutdownInput::InputState::kShutdown || external_kill_fault_ == BMSFault::kFaulted);
+    // fault_ = static_cast<BMSFault>(static_cast<bool>(external_kill_fault_) && current_state_ != BMSState::kShutdown);
 }
 
 static uint32_t number_of_ticks = 0;
 
 void BMS::Tick()
 {
-    watchdog_timer_.feed(); // so we don't reboot
+    watchdog_timer.feed(); // so we don't reboot
     number_of_ticks++;
     Serial.println(number_of_ticks);
     Serial.println("Probe BQ");
@@ -119,15 +123,24 @@ void BMS::UpdateValues()
 {
     // return;
     Serial.println("Start of UpdatedValues");
-    ProcessCooling();
+    // ProcessCooling();
     Serial.println("Processed Cooling");
 
+    watchdog_timer.feed(); // so we don't reboot
+
+    Serial.println("Getting Current");
     bq_.GetCurrent(current_);
     Serial.println("Got Current");
 
+    watchdog_timer.feed(); // so we don't reboot
+
+    Serial.println("Getting Voltages");
     bq_.GetVoltages(voltages_);
     Serial.println("Got Voltages");
 
+    watchdog_timer.feed(); // so we don't reboot
+
+    Serial.println("Getting Temperatures");
     max_cell_voltage_ = *std::max_element(voltages_.begin(), voltages_.end());
     min_cell_voltage_ = *std::min_element(voltages_.begin(), voltages_.end());
     Serial.println("End of UpdatedValues");
@@ -136,6 +149,9 @@ void BMS::UpdateValues()
     // for (auto voltage : voltages_){ Serial.println(voltage); }
 
     CalculateSOE();
+
+    watchdog_timer.feed(); // so we don't reboot
+
     Serial.println("Calculated SOE");
     if (!coulomb_count_.Initialized())
     {

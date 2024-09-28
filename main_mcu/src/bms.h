@@ -127,13 +127,13 @@ public:
         // initialize the watchdog timer to shutdown if the dog isn't fed for 1 second, reset if the dog isn't fed for 2
         // seconds
         WDT_timings_t config;
-        config.trigger = 1; /* in seconds, 0->128 */
-        config.timeout = 2; /* in seconds, 0->128 */
+        config.trigger = 4; /* in seconds, 0->128 */
+        config.timeout = 8; /* in seconds, 0->128 */
         config.callback = [this]() { 
             Serial.println("Watchdog timeout, entering fault state");
             this->ChangeState(BMSState::kFault); 
         };
-        watchdog_timer_.begin(config);
+        watchdog_timer.begin(config);
 
         timer_group_.AddTimer(
             15000, [this]()
@@ -177,6 +177,7 @@ public:
     BMSFault GetExternalKillFault() override { return external_kill_fault_; }
     BMSFault GetOpenWireFault() override { return open_wire_fault_; }
 
+    WDT_T4<WDT1> watchdog_timer;
 private:
     INR21700P42A cell;
 
@@ -184,7 +185,6 @@ private:
 
     BQ79656 bq_;
 
-    WDT_T4<WDT1> watchdog_timer_;
 
     const int kNumCellsSeries;
     const int kNumThermistors;
