@@ -99,21 +99,28 @@ void BMS::ProcessCooling()
     max_cell_temperature_ = *std::max_element(temperatures_.begin(), temperatures_.end());
     min_cell_temperature_ = *std::min_element(temperatures_.begin(), temperatures_.end());
     average_cell_temperature_ = std::accumulate(temperatures_.begin(), temperatures_.end(), 0) / temperatures_.size();
+    Serial.println("Max Cell Temp:");
+    Serial.println(max_cell_temperature_); 
+    
 }
 
 void BMS::UpdateValues()
 {
     Serial.println("Start of UpdatedValues");
-    ProcessCooling();
-    bq_.GetCurrent(current_);
+    //ProcessCooling();
+    //bq_.GetCurrent(current_);
+    
     bq_.GetVoltages(voltages_);
     max_cell_voltage_ = *std::max_element(voltages_.begin(), voltages_.end());
     min_cell_voltage_ = *std::min_element(voltages_.begin(), voltages_.end());
 
     // debug cell_v print
-    //for (auto voltage : voltages_){ Serial.println(voltage); } 
- 
-
+    for (auto voltage : voltages_){ 
+        Serial.println("Voltages:"); 
+        Serial.println(voltage); } 
+    for (auto current : current_){ 
+        Serial.println("Current:"); 
+        Serial.println(current); } 
     CalculateSOE();
     if (!coulomb_count_.Initialized())
     {
