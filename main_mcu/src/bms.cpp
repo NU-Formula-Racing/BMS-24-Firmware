@@ -17,7 +17,7 @@ void BMS::CheckFaults()
     undertemperature_fault_ = static_cast<BMSFault>(min_cell_temperature_ <= kUndertemp);
     external_kill_fault_ = static_cast<BMSFault>(shutdown_input_.GetStatus() == ShutdownInput::InputState::kShutdown);
 
-    fault_ = 
+    fault_ =
         static_cast<BMSFault>(static_cast<bool>(overvoltage_fault_) || static_cast<bool>(undervoltage_fault_)
                               || static_cast<bool>(overcurrent_fault_) || static_cast<bool>(overtemperature_fault_)
                               || static_cast<bool>(undertemperature_fault_) || static_cast<bool>(open_wire_fault_)
@@ -26,13 +26,12 @@ void BMS::CheckFaults()
 
 void BMS::Tick()
 {
-
     watchdog_timer_.feed();  // so we don't reboot
     // check fault status
     
     if (fault_ != BMSFault::kNotFaulted && current_state_ != BMSState::kFault)
     {
-         #if serialdebug 
+         #if 1 
                 Serial.println("Faults:");
                 if (static_cast<bool>(overvoltage_fault_))
                 {
@@ -42,15 +41,15 @@ void BMS::Tick()
                 {
                     Serial.println("  Undervoltage");
                 }
-                if (overtemperature_fault_)
+                if (static_cast<bool>(overtemperature_fault_))
                 {
                     Serial.println("  Overtemperature");
                 }
-                else if (undertemperature_fault_)
+                else if (static_cast<bool>(undertemperature_fault_))
                 {
                     Serial.println("  Undertemperature");
                 }
-                if (overcurrent_fault_)
+                if (static_cast<bool>(overcurrent_fault_))
                 {
                     Serial.println("  Overcurrent");
                 }
@@ -103,15 +102,20 @@ void BMS::ProcessCooling()
 
 void BMS::UpdateValues()
 {
-    //Serial.println("Start of UpdatedValues");
+    Serial.println("Start of UpdatedValues");
     //ProcessCooling();
     //bq_.GetCurrent(current_);
-    //bq_.GetVoltages(voltages_);
+
+    bq_.GetVoltages(voltages_);
+    Serial.println("Got voltage ");
     max_cell_voltage_ = *std::max_element(voltages_.begin(), voltages_.end());
     min_cell_voltage_ = *std::min_element(voltages_.begin(), voltages_.end());
 
     // debug cell_v print
-    //for (auto voltage : voltages_){ Serial.println(voltage); } 
+    for (auto voltage : voltages_){ 
+        Serial.println("Voltages:"); 
+        Serial.println(voltage); } 
+    
  
 
     CalculateSOE();
@@ -135,7 +139,6 @@ void BMS::ProcessState()
 {
     // get new values
     UpdateValues();
-
     // check faults
     CheckFaults();
 
@@ -235,6 +238,29 @@ void BMS::ProcessState()
             
             break;
         case BMSState::kFault:
+            Serial.println("Fault State");
+            Serial.println("Faults:");
+            if (static_cast<bool>(overvoltage_fault_))
+            {
+                Serial.println("  Overvoltage");
+            }
+            else if (static_cast<bool>(undervoltage_fault_))
+            {
+                Serial.println("  Undervoltage");
+            }
+            if (static_cast<bool>(overtemperature_fault_))
+            {
+                Serial.println("  Overtemperature");
+            }
+            else if (static_cast<bool>(undertemperature_fault_))
+            {
+                Serial.println("  Undertemperature");
+            }
+            if (static_cast<bool>(overcurrent_fault_))
+            {
+                Serial.println("  Overcurrent");
+            }
+            Serial.println("");
             // check for clear faults command
             if (command_signal_ == Command::kClearFaults)
             {
