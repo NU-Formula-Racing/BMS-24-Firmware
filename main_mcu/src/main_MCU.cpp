@@ -12,9 +12,9 @@
 
 #define serialdebug 0
 
-TeensyCAN<1> hp_can{};
+TeensyCAN<3> hp_can{};
 TeensyCAN<2> lp_can{};
-TeensyCAN<3> vb_can{};
+TeensyCAN<1> vb_can{};
 
 ElconCharger charger{vb_can, 120 * 15, 14};
 

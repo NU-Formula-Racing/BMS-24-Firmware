@@ -6,7 +6,7 @@
 #include "I-Charger.h"
 #include "can_interface.h"
 
-int BMS::fault_pin_{-1};
+//int BMS::fault_pin_{-1};
 
 void BMS::CheckFaults()
 {
@@ -17,7 +17,7 @@ void BMS::CheckFaults()
     undertemperature_fault_ = static_cast<BMSFault>(min_cell_temperature_ <= kUndertemp);
     external_kill_fault_ = static_cast<BMSFault>(shutdown_input_.GetStatus() == ShutdownInput::InputState::kShutdown);
 
-    fault_ =
+    fault_ = 
         static_cast<BMSFault>(static_cast<bool>(overvoltage_fault_) || static_cast<bool>(undervoltage_fault_)
                               || static_cast<bool>(overcurrent_fault_) || static_cast<bool>(overtemperature_fault_)
                               || static_cast<bool>(undertemperature_fault_) || static_cast<bool>(open_wire_fault_)
@@ -26,12 +26,13 @@ void BMS::CheckFaults()
 
 void BMS::Tick()
 {
-    Serial.println("Probe BQ");
+
     watchdog_timer_.feed();  // so we don't reboot
     // check fault status
+    
     if (fault_ != BMSFault::kNotFaulted && current_state_ != BMSState::kFault)
     {
-        /* #if serialdebug */
+         #if serialdebug 
                 Serial.println("Faults:");
                 if (static_cast<bool>(overvoltage_fault_))
                 {
@@ -41,7 +42,7 @@ void BMS::Tick()
                 {
                     Serial.println("  Undervoltage");
                 }
-                /*if (overtemperature_fault_)
+                if (overtemperature_fault_)
                 {
                     Serial.println("  Overtemperature");
                 }
@@ -54,12 +55,11 @@ void BMS::Tick()
                     Serial.println("  Overcurrent");
                 }
                 Serial.println("");
-             #endif */
+             #endif 
 
         ChangeState(BMSState::kFault);
     }
-
-    Serial.println("About to process state");
+    
     ProcessState();
 
     // log to SD, send to ESP, send to CAN
@@ -103,10 +103,10 @@ void BMS::ProcessCooling()
 
 void BMS::UpdateValues()
 {
-    Serial.println("Start of UpdatedValues");
-    ProcessCooling();
-    bq_.GetCurrent(current_);
-    bq_.GetVoltages(voltages_);
+    //Serial.println("Start of UpdatedValues");
+    //ProcessCooling();
+    //bq_.GetCurrent(current_);
+    //bq_.GetVoltages(voltages_);
     max_cell_voltage_ = *std::max_element(voltages_.begin(), voltages_.end());
     min_cell_voltage_ = *std::min_element(voltages_.begin(), voltages_.end());
 
@@ -149,8 +149,10 @@ void BMS::ProcessState()
     {
         case BMSState::kShutdown:
             // check for command to go to active
+            Serial.println("Shutdown");
             if (command_signal_ == Command::kPrechargeAndCloseContactors)
             {
+                Serial.println("inside precharge");
                 ChangeState(BMSState::kPrecharge);
             }
             else if (charger_.IsConnected() && !(command_signal_ == Command::kShutdown))
@@ -158,8 +160,10 @@ void BMS::ProcessState()
                 Serial.println("Detected charger");
                 ChangeState(BMSState::kPrecharge);
             }
+            Serial.println("Passed Charger & Precharge");
             break;
         case BMSState::kPrecharge:
+            Serial.println("Precharge");
             // do a time-based precharge
             if (command_signal_ == Command::kShutdown)
             {
@@ -184,6 +188,7 @@ void BMS::ProcessState()
 
             break;
         case BMSState::kActive:
+            Serial.println("Active");
             if (command_signal_ == Command::kShutdown)
             {
                 ChangeState(BMSState::kShutdown);
@@ -243,10 +248,11 @@ void BMS::ProcessState()
 
 void BMS::ChangeState(BMSState new_state)
 {
-#if serialdebug
+#if 1
     Serial.print("Changing state: ");
     Serial.println(new_state == BMSState::kShutdown    ? "Shutdown"
                    : new_state == BMSState::kPrecharge ? "Precharge"
+                   : new_state == BMSState::kActive     ? "Active"
                    : new_state == BMSState::kFault     ? "Fault"
                                                        : "Other");
 #endif
