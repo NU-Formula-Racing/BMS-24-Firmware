@@ -17,13 +17,14 @@ public:
         kPrecharge = 1,
         kActive = 2,
         kCharging = 3,
-        kFault = 4
+        kFault = 4,
     };
 
     virtual const std::vector<float> &GetVoltages() = 0;
     virtual const std::vector<float> &GetTemperatures() = 0;
     virtual const std::vector<float> &GetCurrent() = 0;
 
+    virtual BMSState GetIMDState() = 0;
     virtual BMSState GetState() = 0;
     virtual float GetMaxCellTemperature() = 0;
     virtual float GetMinCellTemperature() = 0;

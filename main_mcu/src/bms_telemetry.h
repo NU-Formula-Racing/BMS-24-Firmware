@@ -103,28 +103,31 @@ private:
 
     static const uint32_t kStatusMessageTransmitPeriod{100};
     MakeUnsignedCANSignal(IBMS::BMSState, 0, 8, 1, 0) state_signal_;
-    MakeUnsignedCANSignal(float, 8, 8, 1, -40) max_cell_temperature_signal_;
-    MakeUnsignedCANSignal(float, 16, 8, 1, -40) min_cell_temperature_signal_;
-    MakeUnsignedCANSignal(float, 24, 8, 0.012, 2) max_cell_voltage_signal_;
-    MakeUnsignedCANSignal(float, 32, 8, 0.012, 2) min_cell_voltage_signal_;
-    MakeUnsignedCANSignal(float, 40, 8, 0.5, 0) soc_signal_;
-    CANTXMessage<6> hp_status_message_{hp_can_bus_,
+    MakeUnsignedCANSignal(IBMS::BMSState, 8, 8, 1, 0) imd_signal_;
+    MakeUnsignedCANSignal(float, 16, 8, 1, -40) max_cell_temperature_signal_;
+    MakeUnsignedCANSignal(float, 24, 8, 1, -40) min_cell_temperature_signal_;
+    MakeUnsignedCANSignal(float, 32, 8, 0.012, 2) max_cell_voltage_signal_;
+    MakeUnsignedCANSignal(float, 40, 8, 0.012, 2) min_cell_voltage_signal_;
+    MakeUnsignedCANSignal(float, 48, 8, 0.5, 0) soc_signal_;
+    CANTXMessage<7> hp_status_message_{hp_can_bus_,
                                        0x175,
-                                       6,
+                                       7,
                                        kStatusMessageTransmitPeriod,
                                        timer_group_,
                                        state_signal_,
+                                       imd_signal_,
                                        max_cell_temperature_signal_,
                                        min_cell_temperature_signal_,
                                        max_cell_voltage_signal_,
                                        min_cell_voltage_signal_,
                                        soc_signal_};
-    CANTXMessage<6> vb_status_message_{vb_can_bus_,
+    CANTXMessage<7> vb_status_message_{vb_can_bus_,
                                        0x175,
-                                       6,
+                                       7,
                                        kStatusMessageTransmitPeriod,
                                        timer_group_,
                                        state_signal_,
+                                       imd_signal_,
                                        max_cell_temperature_signal_,
                                        min_cell_temperature_signal_,
                                        max_cell_voltage_signal_,

@@ -20,14 +20,14 @@ ElconCharger charger{vb_can, 120 * 15, 14};
 
 VirtualTimerGroup timer_group{};
 
-const uint8_t kNumSegmentsConfig = 8;
+const uint8_t kNumSegmentsConfig = 1;
 
 ShutdownInput shutdown_input{A14, 1.0f / 8.0f, 15.0f, 10.0f};
 
 NXFT15XH103FA2B050 thermistor{};
-BMS bms{BQ79656{Serial8, 35, thermistor, 18 * kNumSegmentsConfig, 16 * kNumSegmentsConfig, 2 * kNumSegmentsConfig},
-        18 * kNumSegmentsConfig,
-        16 * kNumSegmentsConfig,
+BMS bms{BQ79656{Serial8, 35, thermistor, 14 * kNumSegmentsConfig, 13 * kNumSegmentsConfig, 1 * kNumSegmentsConfig},
+        14 * kNumSegmentsConfig,
+        13 * kNumSegmentsConfig,
         charger,
         timer_group,
         hp_can,

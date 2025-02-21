@@ -143,7 +143,8 @@ public:
     const std::vector<float>& GetVoltages() override { return voltages_; }
     const std::vector<float>& GetTemperatures() override { return temperatures_; }
     const std::vector<float>& GetCurrent() override { return current_; }
-
+   
+    BMSState GetIMDState() override { return imd_state_; }
     BMSState GetState() override { return current_state_; }
     float GetMaxCellTemperature() override { return max_cell_temperature_; }
     float GetAverageCellTemperature() override { return average_cell_temperature_; }
@@ -195,11 +196,11 @@ private:
     ShutdownInput& shutdown_input_;
 
     // Consts for SoE calculation + Fault Detection
-    const int kNumCellsParallel{4};
+    const int kNumCellsParallel{3};
     const float kDischargeCurrent{45.0f * kNumCellsParallel};
     const float kRegenCurrent{45.0f * kNumCellsParallel};
     const float kMaxPowerOutput{80000.0f};
-    const float kCellUndervoltage{2.5f};
+    const float kCellUndervoltage{0.1f};
     const float kCellOvervoltage{4.2f};
     const float kInternalResistance{0.015f};    // 0.015 for P45Bs 
     const float kOvercurrent{180.0f};
@@ -234,10 +235,12 @@ private:
     BMSFault external_kill_fault_{BMSFault::kNotFaulted};
     BMSFault open_wire_fault_{BMSFault::kNotFaulted};
 
-    //static int fault_pin_;
+    static int fault_pin_;
     BMSFault fault_{BMSFault::kNotFaulted};
 
     BMSState current_state_{BMSState::kShutdown};
+
+    BMSState imd_state_{0};
 
     BMSTelemetry telemetry{hp_can_, vb_can_, lp_can_, timer_group_, *this};
     uint32_t state_entry_time_{0};

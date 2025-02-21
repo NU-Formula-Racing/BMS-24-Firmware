@@ -6,7 +6,7 @@
 #include "I-Charger.h"
 #include "can_interface.h"
 
-//int BMS::fault_pin_{-1};
+int BMS::fault_pin_{-1};
 
 void BMS::CheckFaults()
 {
@@ -15,7 +15,7 @@ void BMS::CheckFaults()
     overcurrent_fault_ = static_cast<BMSFault>(current_[0] >= kOvercurrent);
     overtemperature_fault_ = static_cast<BMSFault>(max_cell_temperature_ >= kOvertemp);
     undertemperature_fault_ = static_cast<BMSFault>(min_cell_temperature_ <= kUndertemp);
-    external_kill_fault_ = static_cast<BMSFault>(shutdown_input_.GetStatus() == ShutdownInput::InputState::kShutdown);
+    external_kill_fault_ = static_cast<BMSFault>(digitalRead(shutdown_signal_LED) == LOW);
 
     fault_ =
         static_cast<BMSFault>(static_cast<bool>(overvoltage_fault_) || static_cast<bool>(undervoltage_fault_)
@@ -53,6 +53,14 @@ void BMS::Tick()
                 {
                     Serial.println("  Overcurrent");
                 }
+                if ((static_cast<bool>(external_kill_fault_) && current_state_ != BMSState::kShutdown))
+                {
+                    Serial.println(" external error");
+                }
+                if (static_cast<bool>(open_wire_fault_)) 
+                {
+                    Serial.println(" open wire");
+                }
                 Serial.println("");
              #endif 
 
@@ -63,6 +71,9 @@ void BMS::Tick()
 
     // log to SD, send to ESP, send to CAN
     // todo
+    // log imd status and send to can
+    if( digitalRead(imd_status) == HIGH) {imd_state_ = BMSState::kPrecharge;}
+    else{imd_state_ = BMSState::kShutdown;} 
 }
 
 // Find maximum discharge and regen current
@@ -102,7 +113,7 @@ void BMS::ProcessCooling()
 
 void BMS::UpdateValues()
 {
-    Serial.println("Start of UpdatedValues");
+    //Serial.println("Start of UpdatedValues");
     //ProcessCooling();
     //bq_.GetCurrent(current_);
 
@@ -112,10 +123,10 @@ void BMS::UpdateValues()
     min_cell_voltage_ = *std::min_element(voltages_.begin(), voltages_.end());
 
     // debug cell_v print
-    for (auto voltage : voltages_){ 
+   /* for (auto voltage : voltages_){ 
         Serial.println("Voltages:"); 
         Serial.println(voltage); } 
-    
+    */
  
 
     CalculateSOE();
@@ -151,6 +162,9 @@ void BMS::ProcessState()
     switch (current_state_)
     {
         case BMSState::kShutdown:
+            //digitalWrite(bms_sd_ctrl, HIGH); // led control, change the control scheme to switch state machine
+            //digitalWrite(shutdown_LED, HIGH);
+            digitalWrite(bms_status, HIGH);
             // check for command to go to active
             Serial.println("Shutdown");
             if (command_signal_ == Command::kPrechargeAndCloseContactors)
@@ -167,6 +181,8 @@ void BMS::ProcessState()
             break;
         case BMSState::kPrecharge:
             Serial.println("Precharge");
+            //digitalWrite(shutdown_LED, LOW);
+            //digitalWrite(precharge_LED, HIGH);
             // do a time-based precharge
             if (command_signal_ == Command::kShutdown)
             {
@@ -192,6 +208,9 @@ void BMS::ProcessState()
             break;
         case BMSState::kActive:
             Serial.println("Active");
+            //digitalWrite(precharge_LED, LOW);
+            //digitalWrite(active_LED, HIGH);
+
             if (command_signal_ == Command::kShutdown)
             {
                 ChangeState(BMSState::kShutdown);
@@ -203,6 +222,9 @@ void BMS::ProcessState()
             break;
         case BMSState::kCharging:
             static constexpr float kMaxChargeVoltage{4.19f};
+            Serial.println("Charging");
+            //digitalWrite(shutdown_LED, LOW);
+            //digitalWrite(charging_LED, HIGH);
 
             charger_.Tick(millis());
 
@@ -240,6 +262,7 @@ void BMS::ProcessState()
         case BMSState::kFault:
             Serial.println("Fault State");
             Serial.println("Faults:");
+            //digitalWrite(internal_fault_LED, HIGH);
             if (static_cast<bool>(overvoltage_fault_))
             {
                 Serial.println("  Overvoltage");
@@ -259,6 +282,15 @@ void BMS::ProcessState()
             if (static_cast<bool>(overcurrent_fault_))
             {
                 Serial.println("  Overcurrent");
+            }
+            if ((static_cast<bool>(external_kill_fault_) && current_state_ != BMSState::kShutdown))
+            {
+                Serial.println(" external error");
+
+            }
+            if (static_cast<bool>(open_wire_fault_)) 
+            {
+                Serial.println(" open wire");
             }
             Serial.println("");
             // check for clear faults command
@@ -316,6 +348,7 @@ void BMS::ChangeState(BMSState new_state)
         case BMSState::kFault:
             // open contactors
             ShutdownCar();
+            digitalWrite(bms_sd_ctrl, LOW);
             current_state_ = BMSState::kFault;
             break;
     }

@@ -97,6 +97,7 @@ void BMSTelemetry::UpdateFaultSignals()
 
 void BMSTelemetry::UpdateStatusSignals()
 {
+    imd_signal_  = bms_.GetIMDState();
     state_signal_ = bms_.GetState();
     max_cell_temperature_signal_ = bms_.GetMaxCellTemperature();
     min_cell_temperature_signal_ = bms_.GetMinCellTemperature();
