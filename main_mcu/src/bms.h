@@ -121,6 +121,7 @@ public:
 
         // initialize BMS telemetry
         telemetry.InitializeCAN();
+        hp_can_.RegisterRXMessage(inverter_voltage_hp);
         hp_can_.RegisterRXMessage(command_message_hp_);
         vb_can_.RegisterRXMessage(command_message_vb_);
 
@@ -129,12 +130,13 @@ public:
         WDT_timings_t config;
         config.trigger = 1; /* in seconds, 0->128 */
         config.timeout = 2; /* in seconds, 0->128 */
-        config.callback = [this]() { this->ChangeState(BMSState::kFault); };
+        config.callback = [this]() { Serial.println("watchdog time out to fault"); this->ChangeState(BMSState::kFault); };
         watchdog_timer_.begin(config);
 
+        // open wire fault timer -- only thing on this this timer (I think)
         timer_group_.AddTimer(
-            15000, [this]() { this->open_wire_fault_ = static_cast<BMSFault>(0); }); // deleted open wire fault
-    }
+            5000, [this]() { Serial.println("Open wire to fault"); this->open_wire_fault_ = static_cast<BMSFault>(this->bq_.RunOpenWireCheck());}); // was 15000, changeed to 5000 for debugging
+        }
 
     void Tick();
 
@@ -210,7 +212,13 @@ private:
 
     MakeUnsignedCANSignal(Command, 0, 8, 1, 0) command_signal_{};
     MakeUnsignedCANSignal(bool, 8, 1, 1, 0) high_current_charging_{};
+    MakeUnsignedCANSignal(uint16_t, 32, 16, 0.1, 0) inverter_voltage{};
+    CANRXMessage<1> inverter_voltage_hp{hp_can_, 0x281, inverter_voltage};
     CANRXMessage<1> command_message_hp_{hp_can_, 0x205, command_signal_};
+    // 02/24: for some reason, commenting out the following line solves weird Teensy CAN rxing problem
+        // also commented out other mention of command_message_vb_
+        // uncommented cus it worked again, dont ask me why, but if u see this and tried commenting and recommenting to make it work
+        // slack me(Du Chen) a funny emoji
     CANRXMessage<2> command_message_vb_{vb_can_, 0x205, command_signal_, high_current_charging_};
 
     std::vector<float> voltages_;

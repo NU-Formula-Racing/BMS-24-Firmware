@@ -59,7 +59,7 @@ void BMS::Tick()
                 }
                 if (static_cast<bool>(open_wire_fault_)) 
                 {
-                    Serial.println(" open wire");
+                    Serial.println("  open wire");
                 }
                 Serial.println("");
              #endif 
@@ -72,8 +72,8 @@ void BMS::Tick()
     // log to SD, send to ESP, send to CAN
     // todo
     // log imd status and send to can
-    if( digitalRead(imd_status) == HIGH) {imd_state_ = BMSState::kPrecharge;}
-    else{imd_state_ = BMSState::kShutdown;} 
+    //if( digitalRead(imd_status) == HIGH) {imd_state_ = BMSState::kPrecharge;}
+    //else{imd_state_ = BMSState::kShutdown;} 
 }
 
 // Find maximum discharge and regen current
@@ -152,6 +152,7 @@ void BMS::ProcessState()
     UpdateValues();
     // check faults
     CheckFaults();
+    imd_state_ = BMSState::kActive; 
 
     // prints
     //Serial.print("fault_: ");
@@ -162,9 +163,9 @@ void BMS::ProcessState()
     switch (current_state_)
     {
         case BMSState::kShutdown:
-            //digitalWrite(bms_sd_ctrl, HIGH); // led control, change the control scheme to switch state machine
-            //digitalWrite(shutdown_LED, HIGH);
-            digitalWrite(bms_status, HIGH);
+            //digitalWrite(bms_sd_ctrl, HIGH);
+            //digitalWrite(shutdown_LED, HIGH); // led control, change the control scheme to switch state machine
+            //digitalWrite(bms_status, HIGH);
             // check for command to go to active
             Serial.println("Shutdown");
             if (command_signal_ == Command::kPrechargeAndCloseContactors)
@@ -177,7 +178,6 @@ void BMS::ProcessState()
                 Serial.println("Detected charger");
                 ChangeState(BMSState::kPrecharge);
             }
-            Serial.println("Passed Charger & Precharge");
             break;
         case BMSState::kPrecharge:
             Serial.println("Precharge");
@@ -194,17 +194,18 @@ void BMS::ProcessState()
                 {
                     ChangeState(BMSState::kCharging);
                 }
-                else 
-                if (command_signal_ == Command::kPrechargeAndCloseContactors)
-                {
-                    ChangeState(BMSState::kActive);
-                }
                 else
                 {
                     ChangeState(BMSState::kShutdown);
                 }
             }
-
+             if(inverter_voltage >= 530) // if inverter voltage is greater than 58V delta of our max voltage (588 V)
+             {
+                if (command_signal_ == Command::kPrechargeAndCloseContactors)
+                {
+                    ChangeState(BMSState::kActive);
+                }
+            }
             break;
         case BMSState::kActive:
             Serial.println("Active");
