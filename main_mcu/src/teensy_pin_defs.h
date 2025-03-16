@@ -21,11 +21,11 @@
 #define charger_sense 14
 
 //LEDS for states
-#define charging_LED 40 // sends signal to charging LED
+#define charging_LED 37 // sends signal to charging LED
 #define shutdown_LED 36 // sends signal to shutdown LED
 #define precharge_LED 33 // /sends singal to precharge LED 
 #define active_LED 39 //sends signal if any external fault arises
-#define internal_fault_LED 37 // sends signal if any internal fault arises
+#define internal_fault_LED 40 // sends signal if any internal fault arises
 
 //Shutdown Status LEDs
 #define shutdown_signal_LED 19 // if contactor shutdown is inputted, it lights up

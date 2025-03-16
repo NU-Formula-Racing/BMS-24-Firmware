@@ -18,6 +18,9 @@ public:
 
     void InitializeCAN();
 
+    
+    void ImmediateSendStatus();
+
 private:
     static const uint16_t kSignalsPerMessage = 7;
     static const uint16_t kNumVoltageMessages = 20;

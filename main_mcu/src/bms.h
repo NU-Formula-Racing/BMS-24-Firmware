@@ -135,7 +135,15 @@ public:
         config.trigger = 1; /* in seconds, 0->128 */
         config.timeout = 2; /* in seconds, 0->128 */
         config.callback = [this]() { 
-            Serial.println("watchdog time out to fault"); this->ChangeState(BMSState::kFault);
+            Serial.println("watchdog time out to fault"); 
+            this->ChangeState(BMSState::kFault);
+            this->telemetry.ImmediateSendStatus();
+            while (1) { 
+                watchdog_timer_.feed(); // so we don't reboot
+                Serial.println("fault");
+                digitalWrite(bms_status, LOW);
+                
+            }
         };
         watchdog_timer_.begin(config);
 

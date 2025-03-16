@@ -4,7 +4,7 @@ void BMSTelemetry::InitializeCAN()
 {
     InitializeVoltageAndTemperatureMessages();
 
-    const uint32_t kTickPeriod{10};
+    const uint32_t kTickPeriod{100};
     timer_group_.AddTimer(kTickPeriod, [this]() { this->TickHPCAN(); });
     timer_group_.AddTimer(kTickPeriod, [this]() { this->TickVBCAN(); });
     timer_group_.AddTimer(kTickPeriod, [this]() { this->TickLPCAN(); });
@@ -138,4 +138,11 @@ void BMSTelemetry::TickLPCAN()
     UpdateFaultSignals();
 
     vb_can_bus_.Tick();
+}
+
+
+void BMSTelemetry::ImmediateSendStatus()
+{
+    state_signal_ = bms_.GetState();
+    hp_status_message_.EncodeAndSend();
 }

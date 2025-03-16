@@ -40,12 +40,12 @@ void setup()
 #if serialdebug
     delay(2000);
     Serial.begin(9600);
-    Serial.println("Starting...");
+    //Serial.println("Starting...");
 
 #endif
     // put your setup code here, to run once:
     bms.Initialize();
-    Serial.println("BMS Inited");
+    //Serial.println("BMS Inited");
     hp_can.Initialize(ICAN::BaudRate::kBaud500K);
     lp_can.Initialize(ICAN::BaudRate::kBaud500K);
     vb_can.Initialize(ICAN::BaudRate::kBaud500K);
@@ -55,5 +55,4 @@ void setup()
 }
 
 void loop() { 
-    Serial.println("Looping");
     timer_group.Tick(millis()); }
