@@ -25,9 +25,9 @@ const uint8_t kNumSegmentsConfig = 1;
 ShutdownInput shutdown_input{A14, 1.0f / 8.0f, 15.0f, 10.0f};
 
 NXFT15XH103FA2B050 thermistor{};
-BMS bms{BQ79656{Serial8, 35, thermistor, 14 * kNumSegmentsConfig, 13 * kNumSegmentsConfig, 1 * kNumSegmentsConfig},
-        14 * kNumSegmentsConfig,
-        13 * kNumSegmentsConfig,
+BMS bms{BQ79656{Serial8, 35, thermistor, 28 * kNumSegmentsConfig, 16 * kNumSegmentsConfig, 2 * kNumSegmentsConfig},
+        28 * kNumSegmentsConfig,
+        16 * kNumSegmentsConfig,
         charger,
         timer_group,
         hp_can,
@@ -40,18 +40,20 @@ void setup()
 #if serialdebug
     delay(2000);
     Serial.begin(9600);
-    //Serial.println("Starting...");
+    Serial.println("Starting...");
 
 #endif
     // put your setup code here, to run once:
     bms.Initialize();
-    //Serial.println("BMS Inited");
-    hp_can.Initialize(ICAN::BaudRate::kBaud1M);
-    lp_can.Initialize(ICAN::BaudRate::kBaud1M);
+    Serial.println("BMS Inited");
+    hp_can.Initialize(ICAN::BaudRate::kBaud500K);
+    lp_can.Initialize(ICAN::BaudRate::kBaud500K);
     vb_can.Initialize(ICAN::BaudRate::kBaud500K);
     charger.Initialize();
     timer_group.AddTimer(100, []() { bms.Tick(); });
     // delay(1000);
 }
 
-void loop() { timer_group.Tick(millis()); }
+void loop() { 
+    Serial.println("Looping");
+    timer_group.Tick(millis()); }

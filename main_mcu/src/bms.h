@@ -1,6 +1,5 @@
 #pragma once
 #include <Arduino.h>
-
 #include <algorithm>
 
 #include "I-Charger.h"
@@ -18,6 +17,7 @@ T clamp(const T& n, const T& lower, const T& upper)
 {
     return std::max(lower, std::min(n, upper));
 }
+static bool latch_state;
 
 class ShutdownInput
 {
@@ -68,11 +68,11 @@ class BMS : public IBMS
 public:
     enum class Command : uint8_t
     {
-        kNoAction = 0,
-        kPrechargeAndCloseContactors = 1,
-        kShutdown = 2,
-        kClearFaults = 3
+        kPrechargeAndCloseContactors = 0,
+        kShutdown = 1,
+        kClearFaults = 2
     };
+
 
     BMS(BQ79656 bq /*  = BQ79656{Serial8, 35} */,
         int num_cells_series,
@@ -96,11 +96,12 @@ public:
           temperatures_{std::vector<float>(kNumThermistors)},
           current_{std::vector<float>(1)}
     {
-        command_signal_ = Command::kNoAction;
+        command_signal_ = Command::kShutdown;
     }
 
     void Initialize()
     {
+        Serial.println("asdf");
         // attach fault interrupts
         /* for (int i = 0; i < num_kill_pins; i++)
         {
@@ -115,6 +116,7 @@ public:
         pinMode(contactorp_ctrl, OUTPUT);
         pinMode(contactorn_ctrl, OUTPUT);
 
+
         // initialize the BQ chip driver
         // bq_.SetStackSize(2);  // TODO: temporary
         bq_.Initialize();
@@ -125,18 +127,29 @@ public:
         hp_can_.RegisterRXMessage(command_message_hp_);
         vb_can_.RegisterRXMessage(command_message_vb_);
 
+        
+        digitalWrite(shutdown_LED, HIGH);
+
         // initialize the watchdog timer to shutdown if the dog isn't fed for 1 second, reset if the dog isn't fed for 2
         // seconds
         WDT_timings_t config;
         config.trigger = 1; /* in seconds, 0->128 */
         config.timeout = 2; /* in seconds, 0->128 */
-        config.callback = [this]() { Serial.println("watchdog time out to fault"); this->ChangeState(BMSState::kFault); };
+        config.callback = [this]() { 
+            Serial.println("watchdog time out to fault"); this->ChangeState(BMSState::kFault);
+            this->telemetry.hp_status_message_.EncodeAndSend();
+        };
         watchdog_timer_.begin(config);
 
         // open wire fault timer -- only thing on this this timer (I think)
         timer_group_.AddTimer(
-            5000, [this]() { Serial.println("Open wire to fault"); this->open_wire_fault_ = static_cast<BMSFault>(this->bq_.RunOpenWireCheck());}); // was 15000, changeed to 5000 for debugging
-        }
+            5000, [this]() {this->open_wire_fault_ = static_cast<BMSFault>(this->bq_.RunOpenWireCheck());}); // was 15000, changeed to 5000 for debugging    
+        // can communciation watchdog, if not receiving can communication from ECU or inverter, go into shutdown
+        //timer_group_.AddTimer(
+          //  3000, [this]() {/*this is some bullshit that needs to be written but im lazy as fuck*/});
+          latch_state = false;
+    }
+        
 
     void Tick();
 
@@ -175,8 +188,14 @@ public:
     BMSFault GetOverCurrentFault() override { return overcurrent_fault_; }
     BMSFault GetExternalKillFault() override { return external_kill_fault_; }
     BMSFault GetOpenWireFault() override { return open_wire_fault_; }
+    
 
 private:
+    void UpdateSendTime(){
+        timeSinceLastCANRX = 0;
+    }
+
+    uint16_t timeSinceLastCANRX = 0;
     INR21700P42A cell;
 
     CoulombCounting coulomb_count_;
@@ -202,7 +221,7 @@ private:
     const float kDischargeCurrent{45.0f * kNumCellsParallel};
     const float kRegenCurrent{45.0f * kNumCellsParallel};
     const float kMaxPowerOutput{80000.0f};
-    const float kCellUndervoltage{0.1f};
+    const float kCellUndervoltage{1.2f};
     const float kCellOvervoltage{4.2f};
     const float kInternalResistance{0.015f};    // 0.015 for P45Bs 
     const float kOvercurrent{180.0f};
@@ -213,8 +232,8 @@ private:
     MakeUnsignedCANSignal(Command, 0, 8, 1, 0) command_signal_{};
     MakeUnsignedCANSignal(bool, 8, 1, 1, 0) high_current_charging_{};
     MakeUnsignedCANSignal(uint16_t, 32, 16, 0.1, 0) inverter_voltage{};
-    CANRXMessage<1> inverter_voltage_hp{hp_can_, 0x281, inverter_voltage};
-    CANRXMessage<1> command_message_hp_{hp_can_, 0x205, command_signal_};
+    CANRXMessage<1> inverter_voltage_hp{hp_can_, 0x281, millis, [this](){ this->UpdateSendTime();}, inverter_voltage};
+    CANRXMessage<1> command_message_hp_{hp_can_, 0x205, millis, [this](){ this->UpdateSendTime();}, command_signal_};
     // 02/24: for some reason, commenting out the following line solves weird Teensy CAN rxing problem
         // also commented out other mention of command_message_vb_
         // uncommented cus it worked again, dont ask me why, but if u see this and tried commenting and recommenting to make it work
@@ -234,6 +253,7 @@ private:
     float max_allowed_discharge_current_;
     float max_allowed_regen_current_;
     float state_of_charge_;
+    float current;
 
     BMSFault undervoltage_fault_{BMSFault::kNotFaulted};
     BMSFault overvoltage_fault_{BMSFault::kNotFaulted};
@@ -244,7 +264,8 @@ private:
     BMSFault open_wire_fault_{BMSFault::kNotFaulted};
 
     static int fault_pin_;
-    BMSFault fault_{BMSFault::kNotFaulted};
+    BMSFault internal_fault_{BMSFault::kNotFaulted};
+    BMSFault external_fault_{BMSFault::kNotFaulted};
 
     BMSState current_state_{BMSState::kShutdown};
 

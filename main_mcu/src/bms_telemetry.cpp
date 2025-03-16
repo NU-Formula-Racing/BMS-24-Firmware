@@ -60,7 +60,7 @@ void BMSTelemetry::AttachTemperatureMessages(ICAN &bus,
         temperature_signals_[i * kSignalsPerMessage + 6] = new MakeUnsignedCANSignal(float, 48, 8, 1, -40);
 
         message_ptr_array[i] = new CANTXMessage<7>{bus,
-                                                   0x163 + i,
+                                                   0x167 + i,
                                                    7,
                                                    transmit_period,
                                                    timer_group_,
