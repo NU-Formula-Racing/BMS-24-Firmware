@@ -101,7 +101,6 @@ public:
 
     void Initialize()
     {
-        Serial.println("asdf");
         // attach fault interrupts
         /* for (int i = 0; i < num_kill_pins; i++)
         {
@@ -137,7 +136,6 @@ public:
         config.timeout = 2; /* in seconds, 0->128 */
         config.callback = [this]() { 
             Serial.println("watchdog time out to fault"); this->ChangeState(BMSState::kFault);
-            this->telemetry.hp_status_message_.EncodeAndSend();
         };
         watchdog_timer_.begin(config);
 

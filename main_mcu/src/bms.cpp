@@ -18,24 +18,21 @@ void BMS::CheckFaults()
     external_kill_fault_ = static_cast<BMSFault>(digitalRead(shutdown_signal_LED) == LOW); // this is determined based on the input of
                                                                                            // contactor shutdown line.
 
-    // internal_fault checking
     internal_fault_ = //static_cast<BMSFault>(false);
         static_cast<BMSFault>(static_cast<bool>(overvoltage_fault_) || static_cast<bool>(undervoltage_fault_)
                               || static_cast<bool>(overcurrent_fault_) || static_cast<bool>(overtemperature_fault_)
                               || /*static_cast<bool>(undertemperature_fault_) || */static_cast<bool>(open_wire_fault_));
-
-    // external fault checking
     external_fault_ = 
         static_cast<BMSFault>((static_cast<bool>(external_kill_fault_) && current_state_ != BMSState::kShutdown));
 }
 
 void BMS::Tick()
 {
-    Serial.println("Into Tick");
     watchdog_timer_.feed();  // so we don't reboot
-    Serial.println("Fed Watchdog");
-
-    // check internal fault status and change the state to Latched Fault state when we have an internal fault
+    // check fault status
+    if(static_cast<bool>(external_fault_)) { 
+        ChangeState(BMSState::kShutdown);
+    }
     if (internal_fault_ != BMSFault::kNotFaulted && current_state_ != BMSState::kFault)
     {
          #if 1
@@ -70,27 +67,20 @@ void BMS::Tick()
                 }
                 Serial.println("");
              #endif 
-        
+
         ChangeState(BMSState::kFault);
         
     }
-    Serial.println("Check Internal Fault");
-
+    
     ProcessState();
-    Serial.println("Process State");
-
-    // check external fault status and change the state to shutdown if we have external fault 
-    // (ECU will send precharge if we were in active) but the process state will eliminate this
-    if(static_cast<bool>(external_fault_)) { 
-        ChangeState(BMSState::kShutdown);
-        digitalWrite(bms_status, HIGH);
+    if (!static_cast<bool>(internal_fault_)) {
+    digitalWrite(bms_status, HIGH);
     }
-
     // log to SD, send to ESP, send to CAN
-    // todo(march 16th 2025, idk what god meant when he wrote this, i didnt do anything about this  -DU)
+    // todo
     
 }  
-// SOE is bullshit, get better -DU 
+
 // Find maximum discharge and regen current
 void BMS::CalculateSOE()
 {
@@ -204,9 +194,9 @@ void BMS::ProcessState()
             Serial.println("Cell Balancing:");
             bq_.ProcessBalancing(voltages_, kMaxChargeVoltage);
 
-            // check for command to go to active, if it is precharge and external fault is not real, we precharge
+            // check for command to go to active
             Serial.println("Shutdown");
-            if (command_signal_ == Command::kPrechargeAndCloseContactors && !static_cast<bool>(external_fault_))
+            if (command_signal_ == Command::kPrechargeAndCloseContactors && static_cast<bool>(external_fault_))
             {
                 Serial.println("inside precharge");
                 ChangeState(BMSState::kPrecharge);
@@ -363,6 +353,7 @@ void BMS::ChangeState(BMSState new_state)
             digitalWrite(internal_fault_LED, LOW);
 
             digitalWrite(contactorp_ctrl, HIGH);
+            delay(1);
             digitalWrite(contactorprecharge_ctrl, HIGH);  // precharge, but don't turn on car yet
             current_state_ = BMSState::kPrecharge;
             break;

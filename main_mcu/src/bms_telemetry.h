@@ -17,20 +17,6 @@ public:
     }
 
     void InitializeCAN();
-    CANTXMessage<7> hp_status_message_{hp_can_bus_,
-        0x152,
-        7,
-        kStatusMessageTransmitPeriod,
-        timer_group_,
-        state_signal_,
-        imd_signal_,
-        max_cell_temperature_signal_,
-        min_cell_temperature_signal_,
-        max_cell_voltage_signal_,
-        min_cell_voltage_signal_,
-        soc_signal_};
-
-    
 
 private:
     static const uint16_t kSignalsPerMessage = 7;
@@ -123,7 +109,19 @@ private:
     MakeUnsignedCANSignal(float, 32, 8, 0.012, 2) max_cell_voltage_signal_;
     MakeUnsignedCANSignal(float, 40, 8, 0.012, 2) min_cell_voltage_signal_;
     MakeUnsignedCANSignal(float, 48, 8, 0.5, 0) soc_signal_;
-     CANTXMessage<7> vb_status_message_{vb_can_bus_,
+    CANTXMessage<7> hp_status_message_{hp_can_bus_,
+                                       0x152,
+                                       7,
+                                       kStatusMessageTransmitPeriod,
+                                       timer_group_,
+                                       state_signal_,
+                                       imd_signal_,
+                                       max_cell_temperature_signal_,
+                                       min_cell_temperature_signal_,
+                                       max_cell_voltage_signal_,
+                                       min_cell_voltage_signal_,
+                                       soc_signal_};
+    CANTXMessage<7> vb_status_message_{vb_can_bus_,
                                        0x152,
                                        7,
                                        kStatusMessageTransmitPeriod,
@@ -150,7 +148,7 @@ private:
 
     void InitializeVoltageAndTemperatureMessages();
 
+    void TickHPCAN();
     void TickVBCAN();
     void TickLPCAN();
-    void TickHPCAN();
 };
