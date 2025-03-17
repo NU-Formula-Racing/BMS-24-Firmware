@@ -142,6 +142,7 @@ public:
                 watchdog_timer_.feed(); // so we don't reboot
                 Serial.println("fault");
                 digitalWrite(bms_status, LOW);
+                this->telemetry.ImmediateSendStatus(); 
                 
             }
         };
