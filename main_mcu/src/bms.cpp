@@ -74,6 +74,7 @@ void BMS::Tick()
     }
     if(static_cast<bool>(external_fault_))
     {
+        Serial.println("this is external faulting?");
         ChangeState(BMSState::kShutdown);
     }
     // log to SD, send to ESP, send to CAN

@@ -4,7 +4,7 @@ void BMSTelemetry::InitializeCAN()
 {
     InitializeVoltageAndTemperatureMessages();
 
-    const uint32_t kTickPeriod{100};
+    const uint32_t kTickPeriod{10};
     timer_group_.AddTimer(kTickPeriod, [this]() { this->TickHPCAN(); });
     timer_group_.AddTimer(kTickPeriod, [this]() { this->TickVBCAN(); });
     timer_group_.AddTimer(kTickPeriod, [this]() { this->TickLPCAN(); });
