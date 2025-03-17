@@ -143,7 +143,7 @@ public:
                 Serial.println("fault");
                 digitalWrite(bms_status, LOW);
                 this->telemetry.ImmediateSendStatus(); 
-                
+                delay(10);
             }
         };
         watchdog_timer_.begin(config);
